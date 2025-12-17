@@ -3,9 +3,9 @@ Proyecto final
 
 # Participantes
 
-Carmen Campos Garcia
-Juan Carlos Castaño Lopez
-Nattakarn Sitthiwutthinon
+Carmen Campos Garcia\
+Juan Carlos Castaño Lopez\
+Nattakarn Sitthiwutthinon\
 
 # Pasos para iniciar plumber
 
