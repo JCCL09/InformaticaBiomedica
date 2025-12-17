@@ -1,0 +1,10 @@
+install.packages(c(
+  "plumber",
+  "jsonlite",
+  "readr",
+  "dplyr",
+  "pROC",
+  "callr",
+  "rmarkdown",
+  "knitr"
+))
