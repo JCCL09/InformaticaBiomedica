@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="es" xml:lang="es"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.26">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Fase 1 — Predicción de Prediabetes y Diabetes (BRFSS 2015)</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="phase1_report_files/libs/clipboard/clipboard.min.js"></script>
+<script src="phase1_report_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="phase1_report_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="phase1_report_files/libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="phase1_report_files/libs/quarto-html/popper.min.js"></script>
+<script src="phase1_report_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="phase1_report_files/libs/quarto-html/anchor.min.js"></script>
+<link href="phase1_report_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="phase1_report_files/libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="phase1_report_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="phase1_report_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="phase1_report_files/libs/bootstrap/bootstrap-9e3ffae467580fdb927a41352e75a2e0.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Tabla de contenidos</h2>
+   
+  <ul>
+  <li><a href="#resumen-ejecutivo" id="toc-resumen-ejecutivo" class="nav-link active" data-scroll-target="#resumen-ejecutivo"><span class="header-section-number">1</span> Resumen ejecutivo</a></li>
+  <li><a href="#objetivo-y-alcance" id="toc-objetivo-y-alcance" class="nav-link" data-scroll-target="#objetivo-y-alcance"><span class="header-section-number">2</span> Objetivo y alcance</a></li>
+  <li><a href="#datos-y-variable-objetivo" id="toc-datos-y-variable-objetivo" class="nav-link" data-scroll-target="#datos-y-variable-objetivo"><span class="header-section-number">3</span> Datos y variable objetivo</a></li>
+  <li><a href="#metodología-y-definición-del-modelo" id="toc-metodología-y-definición-del-modelo" class="nav-link" data-scroll-target="#metodología-y-definición-del-modelo"><span class="header-section-number">4</span> Metodología y definición del modelo</a>
+  <ul class="collapse">
+  <li><a href="#enfoque-jerárquico-modelo-a-modelo-b" id="toc-enfoque-jerárquico-modelo-a-modelo-b" class="nav-link" data-scroll-target="#enfoque-jerárquico-modelo-a-modelo-b"><span class="header-section-number">4.1</span> Enfoque jerárquico (Modelo A + Modelo B)</a></li>
+  <li><a href="#umbral-de-decisión-youden" id="toc-umbral-de-decisión-youden" class="nav-link" data-scroll-target="#umbral-de-decisión-youden"><span class="header-section-number">4.2</span> Umbral de decisión: Youden</a></li>
+  </ul></li>
+  <li><a href="#artefactos-bundle-del-modelo" id="toc-artefactos-bundle-del-modelo" class="nav-link" data-scroll-target="#artefactos-bundle-del-modelo"><span class="header-section-number">5</span> Artefactos: bundle del modelo</a></li>
+  <li><a href="#evaluación-del-desempeño" id="toc-evaluación-del-desempeño" class="nav-link" data-scroll-target="#evaluación-del-desempeño"><span class="header-section-number">6</span> Evaluación del desempeño</a>
+  <ul class="collapse">
+  <li><a href="#métricas-desde-el-bundle-si-existen" id="toc-métricas-desde-el-bundle-si-existen" class="nav-link" data-scroll-target="#métricas-desde-el-bundle-si-existen"><span class="header-section-number">6.1</span> Métricas desde el bundle (si existen)</a></li>
+  </ul></li>
+  <li><a href="#interpretación-del-glm-odds-ratios-or-e-ic95" id="toc-interpretación-del-glm-odds-ratios-or-e-ic95" class="nav-link" data-scroll-target="#interpretación-del-glm-odds-ratios-or-e-ic95"><span class="header-section-number">7</span> Interpretación del GLM: Odds Ratios (OR) e IC95%</a></li>
+  <li><a href="#contrato-del-api-plumber-swagger" id="toc-contrato-del-api-plumber-swagger" class="nav-link" data-scroll-target="#contrato-del-api-plumber-swagger"><span class="header-section-number">8</span> Contrato del API (Plumber + Swagger)</a></li>
+  <li><a href="#limitaciones-y-riesgos" id="toc-limitaciones-y-riesgos" class="nav-link" data-scroll-target="#limitaciones-y-riesgos"><span class="header-section-number">9</span> Limitaciones y riesgos</a></li>
+  <li><a href="#reproducibilidad" id="toc-reproducibilidad" class="nav-link" data-scroll-target="#reproducibilidad"><span class="header-section-number">10</span> Reproducibilidad</a></li>
+  </ul>
+</nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Fase 1 — Predicción de Prediabetes y Diabetes (BRFSS 2015)</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="resumen-ejecutivo" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Resumen ejecutivo</h1>
+<p>Este informe documenta el desarrollo de un enfoque de <strong>clasificación probabilística</strong> para enfermedad glucémica utilizando el dataset BRFSS 2015 con etiqueta <code>Diabetes_012</code> (0 = sano, 1 = prediabetes, 2 = diabetes). Se implementó un enfoque jerárquico con dos regresiones logísticas (<code>glm</code> binomial) para producir probabilidades coherentes de tres clases (sano / prediabetes / diabetes).</p>
+<p>El sistema se empaquetó en una <strong>API REST</strong> mediante <strong>plumber</strong>, documentada con Swagger, con un contrato de salida que reporta: - Probabilidades por clase. - Clase final basada en umbrales (criterio de Youden).</p>
+<hr>
+</section>
+<section id="objetivo-y-alcance" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Objetivo y alcance</h1>
+<p><strong>Objetivo:</strong> predecir <strong>prediabetes o diabetes</strong> a partir de indicadores clínicos y de estilo de vida presentes en BRFSS 2015, entregando:</p>
+<ol type="1">
+<li>Probabilidades:
+<ul>
+<li><code>p_diabetes</code></li>
+<li><code>p_prediabetes</code></li>
+<li><code>p_healthy</code></li>
+</ul></li>
+<li>Una clase final (<code>final_class</code>) definida por umbrales (Youden).</li>
+</ol>
+<p><strong>Alcance y supuestos:</strong><br>
+- Modelo explicativo-predictivo (asociación; no causalidad).<br>
+- Datos auto-reportados: se asume ruido de medición.<br>
+- Se implementa <code>glm</code> puro (sin regularización) por consistencia con lo cubierto en el curso.<br>
+- Variables ordinales se tratan como numéricas (asunción de “efecto lineal por unidad” en el logit).</p>
+<hr>
+</section>
+<section id="datos-y-variable-objetivo" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Datos y variable objetivo</h1>
+<p>El dataset utilizado contiene la variable <code>Diabetes_012</code>:</p>
+<ul>
+<li>0: no diabetes (incluye “solo durante embarazo”, según la codificación del dataset).</li>
+<li>1: prediabetes</li>
+<li>2: diabetes</li>
+</ul>
+<p>La decisión de trabajo es usar <code>Diabetes_012</code> (0/1/2) y derivar objetivos binarios internos para entrenamiento.</p>
+<div class="cell">
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Distribución de la variable objetivo Diabetes_012 (CSV 0/1/2).</caption>
+<thead>
+<tr class="header">
+<th style="text-align: right;">Diabetes_012</th>
+<th style="text-align: right;">n</th>
+<th style="text-align: right;">prop</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">213703</td>
+<td style="text-align: right;">0.8424</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">4631</td>
+<td style="text-align: right;">0.0183</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">35346</td>
+<td style="text-align: right;">0.1393</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="metodología-y-definición-del-modelo" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> Metodología y definición del modelo</h1>
+<section id="enfoque-jerárquico-modelo-a-modelo-b" class="level2" data-number="4.1">
+<h2 data-number="4.1" class="anchored" data-anchor-id="enfoque-jerárquico-modelo-a-modelo-b"><span class="header-section-number">4.1</span> Enfoque jerárquico (Modelo A + Modelo B)</h2>
+<p>Se usan dos modelos logísticos:</p>
+<p>Modelo A (diabetes):</p>
+<ul>
+<li><p>Objetivo: Y_A = 1{Diabetes_012 = 2}, 0{Diabetes_012 in {0,1}}</p></li>
+<li><p>Salida: p_diabetes = P(D=2)</p></li>
+</ul>
+<p>Modelo B (prediabetes condicional):</p>
+<ul>
+<li><p>Entrenado solo en registros con Diabetes_012 in {0,1}</p></li>
+<li><p>Objetivo: Y_B = 1{Diabetes_012 = 1}, 0{Diabetes_012 = 0}</p></li>
+<li><p>Salida: p_pred_cond = P(D=1 | D != 2)</p></li>
+</ul>
+<p>Se derivan probabilidades coherentes de 3 clases:</p>
+<ul>
+<li><p>p_prediabetes = (1 - p_diabetes) * p_pred_cond</p></li>
+<li><p>p_healthy = 1 - p_diabetes - p_prediabetes</p></li>
+</ul>
+</section>
+<section id="umbral-de-decisión-youden" class="level2" data-number="4.2">
+<h2 data-number="4.2" class="anchored" data-anchor-id="umbral-de-decisión-youden"><span class="header-section-number">4.2</span> Umbral de decisión: Youden</h2>
+<p>Los umbrales de clasificación se obtienen con el criterio de Youden (maximiza sensibilidad + especificidad − 1). Se guardan dentro del bundle para usar los mismos umbrales en API y en reporte.</p>
+</section>
+</section>
+<section id="artefactos-bundle-del-modelo" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> Artefactos: bundle del modelo</h1>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>$created_at
+[1] "2025-12-16 22:08:37.717784"
+
+$n_predictors
+[1] 21
+
+$threshold_diabetes
+[1] 0.1212619
+
+$threshold_prediabetes_cond
+[1] 0.01922558</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$na_total_after_numeric_cast
+[1] 0</code></pre>
+</div>
+</div>
+</section>
+<section id="evaluación-del-desempeño" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> Evaluación del desempeño</h1>
+<p>El bundle contiene métricas de validación/test (bundle$performance), se reportan esas.</p>
+<section id="métricas-desde-el-bundle-si-existen" class="level2" data-number="6.1">
+<h2 data-number="6.1" class="anchored" data-anchor-id="métricas-desde-el-bundle-si-existen"><span class="header-section-number">6.1</span> Métricas desde el bundle (si existen)</h2>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>$A
+$A$val
+$A$val$auc
+[1] 0.826633
+
+$A$val$metrics
+$A$val$metrics$threshold
+[1] 0.1212619
+
+$A$val$metrics$tp
+[1] 4304
+
+$A$val$metrics$tn
+[1] 22630
+
+$A$val$metrics$fp
+[1] 10120
+
+$A$val$metrics$fn
+[1] 997
+
+$A$val$metrics$sensitivity
+[1] 0.8119223
+
+$A$val$metrics$specificity
+[1] 0.6909924
+
+$A$val$metrics$accuracy
+[1] 0.7078395
+
+$A$val$metrics$precision
+[1] 0.2983916
+
+$A$val$metrics$f1
+[1] 0.4364005
+
+
+
+$A$test
+$A$test$auc
+[1] 0.82574
+
+$A$test$metrics
+$A$test$metrics$threshold
+[1] 0.1212619
+
+$A$test$metrics$tp
+[1] 4297
+
+$A$test$metrics$tn
+[1] 22418
+
+$A$test$metrics$fp
+[1] 10333
+
+$A$test$metrics$fn
+[1] 1006
+
+$A$test$metrics$sensitivity
+[1] 0.8102961
+
+$A$test$metrics$specificity
+[1] 0.6844982
+
+$A$test$metrics$accuracy
+[1] 0.7020287
+
+$A$test$metrics$precision
+[1] 0.2937116
+
+$A$test$metrics$f1
+[1] 0.4311443
+
+
+
+
+$B
+$B$val
+$B$val$auc
+[1] 0.7496274
+
+$B$val$metrics
+$B$val$metrics$threshold
+[1] 0.01922558
+
+$B$val$metrics$tp
+[1] 519
+
+$B$val$metrics$tn
+[1] 20309
+
+$B$val$metrics$fp
+[1] 11746
+
+$B$val$metrics$fn
+[1] 175
+
+$B$val$metrics$sensitivity
+[1] 0.7478386
+
+$B$val$metrics$specificity
+[1] 0.6335673
+
+$B$val$metrics$accuracy
+[1] 0.6359889
+
+$B$val$metrics$precision
+[1] 0.04231553
+
+$B$val$metrics$f1
+[1] 0.08009877
+
+
+
+$B$test
+$B$test$auc
+[1] 0.7380495
+
+$B$test$metrics
+$B$test$metrics$threshold
+[1] 0.01922558
+
+$B$test$metrics$tp
+[1] 502
+
+$B$test$metrics$tn
+[1] 20369
+
+$B$test$metrics$fp
+[1] 11687
+
+$B$test$metrics$fn
+[1] 194
+
+$B$test$metrics$sensitivity
+[1] 0.7212644
+
+$B$test$metrics$specificity
+[1] 0.6354193
+
+$B$test$metrics$accuracy
+[1] 0.6372435
+
+$B$test$metrics$precision
+[1] 0.04118467
+
+$B$test$metrics$f1
+[1] 0.07792006</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="interpretación-del-glm-odds-ratios-or-e-ic95" class="level1" data-number="7">
+<h1 data-number="7"><span class="header-section-number">7</span> Interpretación del GLM: Odds Ratios (OR) e IC95%</h1>
+<p>Se reportan OR e IC95% (Wald). Interpretación:</p>
+<ul>
+<li><p>Para variables binarias 0/1, el OR representa el cambio relativo en odds al pasar de 0 a 1.</p></li>
+<li><p>Para variables ordinales tratadas como numéricas, el OR se interpreta por incremento de 1 unidad (supuesto fuerte; debe destacarse).</p></li>
+</ul>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "p_value"</code></pre>
+</div>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Modelo A (Diabetes): Top-20 términos por p-valor (Wald).</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">term</th>
+<th style="text-align: right;">OR</th>
+<th style="text-align: right;">OR_low</th>
+<th style="text-align: right;">OR_high</th>
+<th style="text-align: right;">p_value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">(Intercept)</td>
+<td style="text-align: right;">0.0004</td>
+<td style="text-align: right;">0.0003</td>
+<td style="text-align: right;">0.0005</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">HighBP</td>
+<td style="text-align: right;">2.0944</td>
+<td style="text-align: right;">2.0234</td>
+<td style="text-align: right;">2.1678</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">BMI</td>
+<td style="text-align: right;">1.0625</td>
+<td style="text-align: right;">1.0603</td>
+<td style="text-align: right;">1.0648</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">GenHlth</td>
+<td style="text-align: right;">1.7029</td>
+<td style="text-align: right;">1.6708</td>
+<td style="text-align: right;">1.7356</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Age</td>
+<td style="text-align: right;">1.1293</td>
+<td style="text-align: right;">1.1219</td>
+<td style="text-align: right;">1.1367</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">HighChol</td>
+<td style="text-align: right;">1.7931</td>
+<td style="text-align: right;">1.7369</td>
+<td style="text-align: right;">1.8511</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">HvyAlcoholConsump</td>
+<td style="text-align: right;">0.4656</td>
+<td style="text-align: right;">0.4255</td>
+<td style="text-align: right;">0.5094</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Sex</td>
+<td style="text-align: right;">1.2984</td>
+<td style="text-align: right;">1.2582</td>
+<td style="text-align: right;">1.3400</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">CholCheck</td>
+<td style="text-align: right;">3.5173</td>
+<td style="text-align: right;">2.9937</td>
+<td style="text-align: right;">4.1324</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Income</td>
+<td style="text-align: right;">0.9478</td>
+<td style="text-align: right;">0.9399</td>
+<td style="text-align: right;">0.9557</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">HeartDiseaseorAttack</td>
+<td style="text-align: right;">1.2690</td>
+<td style="text-align: right;">1.2172</td>
+<td style="text-align: right;">1.3229</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PhysHlth</td>
+<td style="text-align: right;">0.9932</td>
+<td style="text-align: right;">0.9914</td>
+<td style="text-align: right;">0.9950</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">DiffWalk</td>
+<td style="text-align: right;">1.1162</td>
+<td style="text-align: right;">1.0726</td>
+<td style="text-align: right;">1.1616</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Education</td>
+<td style="text-align: right;">0.9731</td>
+<td style="text-align: right;">0.9573</td>
+<td style="text-align: right;">0.9891</td>
+<td style="text-align: right;">0.0010</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Stroke</td>
+<td style="text-align: right;">1.1034</td>
+<td style="text-align: right;">1.0399</td>
+<td style="text-align: right;">1.1708</td>
+<td style="text-align: right;">0.0011</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">MentHlth</td>
+<td style="text-align: right;">0.9970</td>
+<td style="text-align: right;">0.9950</td>
+<td style="text-align: right;">0.9990</td>
+<td style="text-align: right;">0.0029</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Veggies</td>
+<td style="text-align: right;">0.9498</td>
+<td style="text-align: right;">0.9152</td>
+<td style="text-align: right;">0.9858</td>
+<td style="text-align: right;">0.0066</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PhysActivity</td>
+<td style="text-align: right;">0.9558</td>
+<td style="text-align: right;">0.9241</td>
+<td style="text-align: right;">0.9887</td>
+<td style="text-align: right;">0.0088</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Fruits</td>
+<td style="text-align: right;">0.9636</td>
+<td style="text-align: right;">0.9332</td>
+<td style="text-align: right;">0.9949</td>
+<td style="text-align: right;">0.0232</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">AnyHealthcare</td>
+<td style="text-align: right;">1.0558</td>
+<td style="text-align: right;">0.9766</td>
+<td style="text-align: right;">1.1414</td>
+<td style="text-align: right;">0.1725</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Modelo B (Prediabetes condicional): Top-20 términos por p-valor (Wald).</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">term</th>
+<th style="text-align: right;">OR</th>
+<th style="text-align: right;">OR_low</th>
+<th style="text-align: right;">OR_high</th>
+<th style="text-align: right;">p_value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">(Intercept)</td>
+<td style="text-align: right;">0.0007</td>
+<td style="text-align: right;">0.0005</td>
+<td style="text-align: right;">0.0012</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">BMI</td>
+<td style="text-align: right;">1.0417</td>
+<td style="text-align: right;">1.0374</td>
+<td style="text-align: right;">1.0461</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">HighChol</td>
+<td style="text-align: right;">1.7550</td>
+<td style="text-align: right;">1.6269</td>
+<td style="text-align: right;">1.8931</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Age</td>
+<td style="text-align: right;">1.1149</td>
+<td style="text-align: right;">1.0984</td>
+<td style="text-align: right;">1.1316</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">GenHlth</td>
+<td style="text-align: right;">1.3602</td>
+<td style="text-align: right;">1.3009</td>
+<td style="text-align: right;">1.4222</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">HighBP</td>
+<td style="text-align: right;">1.5221</td>
+<td style="text-align: right;">1.4055</td>
+<td style="text-align: right;">1.6484</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Income</td>
+<td style="text-align: right;">0.9368</td>
+<td style="text-align: right;">0.9185</td>
+<td style="text-align: right;">0.9554</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">CholCheck</td>
+<td style="text-align: right;">2.5155</td>
+<td style="text-align: right;">1.8333</td>
+<td style="text-align: right;">3.4515</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">NoDocbcCost</td>
+<td style="text-align: right;">1.3693</td>
+<td style="text-align: right;">1.2191</td>
+<td style="text-align: right;">1.5380</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Education</td>
+<td style="text-align: right;">0.9092</td>
+<td style="text-align: right;">0.8751</td>
+<td style="text-align: right;">0.9447</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">MentHlth</td>
+<td style="text-align: right;">1.0071</td>
+<td style="text-align: right;">1.0026</td>
+<td style="text-align: right;">1.0117</td>
+<td style="text-align: right;">0.0021</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PhysHlth</td>
+<td style="text-align: right;">0.9935</td>
+<td style="text-align: right;">0.9890</td>
+<td style="text-align: right;">0.9979</td>
+<td style="text-align: right;">0.0043</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">HvyAlcoholConsump</td>
+<td style="text-align: right;">0.8298</td>
+<td style="text-align: right;">0.6983</td>
+<td style="text-align: right;">0.9861</td>
+<td style="text-align: right;">0.0341</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Sex</td>
+<td style="text-align: right;">1.0764</td>
+<td style="text-align: right;">0.9992</td>
+<td style="text-align: right;">1.1596</td>
+<td style="text-align: right;">0.0525</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Stroke</td>
+<td style="text-align: right;">0.8596</td>
+<td style="text-align: right;">0.7350</td>
+<td style="text-align: right;">1.0054</td>
+<td style="text-align: right;">0.0585</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">AnyHealthcare</td>
+<td style="text-align: right;">0.8913</td>
+<td style="text-align: right;">0.7573</td>
+<td style="text-align: right;">1.0491</td>
+<td style="text-align: right;">0.1664</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Veggies</td>
+<td style="text-align: right;">0.9667</td>
+<td style="text-align: right;">0.8847</td>
+<td style="text-align: right;">1.0564</td>
+<td style="text-align: right;">0.4549</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">HeartDiseaseorAttack</td>
+<td style="text-align: right;">1.0409</td>
+<td style="text-align: right;">0.9364</td>
+<td style="text-align: right;">1.1570</td>
+<td style="text-align: right;">0.4580</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Smoker</td>
+<td style="text-align: right;">0.9780</td>
+<td style="text-align: right;">0.9090</td>
+<td style="text-align: right;">1.0522</td>
+<td style="text-align: right;">0.5514</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">DiffWalk</td>
+<td style="text-align: right;">0.9769</td>
+<td style="text-align: right;">0.8852</td>
+<td style="text-align: right;">1.0781</td>
+<td style="text-align: right;">0.6421</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="contrato-del-api-plumber-swagger" class="level1" data-number="8">
+<h1 data-number="8"><span class="header-section-number">8</span> Contrato del API (Plumber + Swagger)</h1>
+<p>La API expone endpoints:</p>
+<ul>
+<li><p>GET /health — verificación de estado.</p></li>
+<li><p>POST /predict — recibe un JSON con los predictores del modelo y devuelve probabilidades y clase final.</p></li>
+</ul>
+<p>Salida esperada:</p>
+<ul>
+<li><p>probabilities: {p_diabetes, p_prediabetes, p_healthy}</p></li>
+<li><p>final_class: etiqueta final basada en umbrales (Youden)</p></li>
+</ul>
+</section>
+<section id="limitaciones-y-riesgos" class="level1" data-number="9">
+<h1 data-number="9"><span class="header-section-number">9</span> Limitaciones y riesgos</h1>
+<ul>
+<li><p>Auto-reporte: variables y diagnóstico pueden tener error sistemático.</p></li>
+<li><p>Observacional: el GLM captura asociación, no causalidad.</p></li>
+</ul>
+</section>
+<section id="reproducibilidad" class="level1" data-number="10">
+<h1 data-number="10"><span class="header-section-number">10</span> Reproducibilidad</h1>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>R version 4.5.1 (2025-06-13 ucrt)
+Platform: x86_64-w64-mingw32/x64
+Running under: Windows 11 x64 (build 26100)
+
+Matrix products: default
+  LAPACK version 3.12.1
+
+locale:
+[1] LC_COLLATE=Spanish_Colombia.utf8  LC_CTYPE=Spanish_Colombia.utf8   
+[3] LC_MONETARY=Spanish_Colombia.utf8 LC_NUMERIC=C                     
+[5] LC_TIME=Spanish_Colombia.utf8    
+
+time zone: Europe/Paris
+tzcode source: internal
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] httr_1.4.7     jsonlite_2.0.0 knitr_1.50     pROC_1.19.0.1  tidyr_1.3.1   
+[6] dplyr_1.1.4    readr_2.1.6   
+
+loaded via a namespace (and not attached):
+ [1] crayon_1.5.3     vctrs_0.6.5      cli_3.6.5        rlang_1.1.6     
+ [5] xfun_0.54        purrr_1.2.0      generics_0.1.4   bit_4.6.0       
+ [9] glue_1.8.0       htmltools_0.5.9  hms_1.1.4        rmarkdown_2.30  
+[13] evaluate_1.0.5   tibble_3.3.0     tzdb_0.5.0       fastmap_1.2.0   
+[17] yaml_2.3.11      lifecycle_1.0.4  compiler_4.5.1   Rcpp_1.1.0      
+[21] pkgconfig_2.0.3  digest_0.6.39    R6_2.6.1         tidyselect_1.2.1
+[25] parallel_4.5.1   vroom_1.6.7      pillar_1.11.1    magrittr_2.0.4  
+[29] withr_3.0.2      bit64_4.6.0-1    tools_4.5.1     </code></pre>
+</div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copiado");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copiado");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
