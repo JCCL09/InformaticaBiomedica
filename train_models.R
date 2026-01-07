@@ -13,7 +13,7 @@ set.seed(20250101)
 # ============
 # Configuración
 # ============
-csv_path <- "data/diabetes_012_health_indicators_BRFSS2015.csv"  # Ajusta ruta
+csv_path <- "diabetes_012_health_indicators_BRFSS2015.csv" 
 out_bundle_path <- "artifacts/model_bundle.rds"
 
 p_train <- 0.70
@@ -239,3 +239,4 @@ bundle <- list(
 
 saveRDS(bundle, out_bundle_path)
 cat("\nBundle guardado en: ", out_bundle_path, "\n", sep = "")
+
