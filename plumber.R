@@ -3,11 +3,11 @@ library(plumber)
 library(jsonlite)
 
 # Carga bundle al iniciar API
-BUNDLE_PATH <- "artifacts/model_bundle.rds"# nolint:
+BUNDLE_PATH <- file.path("artifacts", "model_bundle.rds") # nolint:
 
 if (!file.exists(BUNDLE_PATH)) {
   stop(
-    "No existe artifacts/model_bundle.rds. Primero ejecuta: Rscript train_models.R"# nolint:
+    "No existe artifacts/model_bundle.rds. Primero ejecuta: Rscript train_models.R" # nolint:
   )
 }
 
@@ -16,8 +16,8 @@ bundle <- readRDS(BUNDLE_PATH)
 predictors <- bundle$predictors
 thr_diabetes <- bundle$threshold_diabetes
 thr_pred_cond <- bundle$threshold_prediabetes_cond
-mA <- bundle$model_diabetes# nolint:
-mB <- bundle$model_prediabetes_cond# nolint:
+mA <- bundle$model_diabetes # nolint:
+mB <- bundle$model_prediabetes_cond # nolint:
 
 # Helpers
 as_numeric_strict <- function(x) {
@@ -79,7 +79,7 @@ function() {
     required_fields = predictors,
     notes = list(
       input_type = "Todas las variables deben enviarse como numéricas.",
-      prediabetes_probability = "p_prediabetes = (1 - p_diabetes) * p_prediabetes_cond"# nolint:
+      prediabetes_probability = "p_prediabetes = (1 - p_diabetes) * p_prediabetes_cond" # nolint:
     )
   )
 }
@@ -88,12 +88,28 @@ function() {
 #* @post /predict
 #* @parser json
 #* @serializer json
-function(req, res) {
-  body <- req$argsBody
+#* @param payload:string JSON como string (solo para Swagger UI). Si Swagger no permite body, pega aquí un JSON compacto.
+function(req, res, payload = "") {
+  body <- req$body
+
+  # Swagger a veces no envía body; usa el parámetro payload (string) como fallback
+  if ((is.null(body) || length(body) == 0) && nzchar(payload)) {
+    body <- tryCatch(jsonlite::fromJSON(payload), error = function(e) NULL)
+  }
+
+  # Algunos clientes/swagger pueden entregar data.frame
+  if (is.data.frame(body)) {
+    body <- as.list(body[1, , drop = TRUE])
+  }
+
+  # Si llega como string JSON, intenta parsearlo
+  if (is.character(body) && length(body) == 1 && nzchar(body)) {
+    body <- tryCatch(jsonlite::fromJSON(body), error = function(e) NULL)
+  }
 
   if (is.null(body) || length(body) == 0) {
     res$status <- 400
-    return(list(error = "JSON body vacío o inválido"))
+    return(list(error = "JSON body vacío o inválido. En Swagger, usa el parámetro 'payload' y pega un JSON compacto con todas las variables del /schema."))
   }
 
   built <- build_newdata(body, predictors)
@@ -107,7 +123,7 @@ function(req, res) {
   # Modelo A: diabetes
   p_diabetes <- as.numeric(predict(mA, newdata = newdata, type = "response"))
 
-  # Modelo B: prediabetes condicional (solo tiene sentido si no es diabetes)
+  # Modelo B: prediabetes condicional
   p_pred_cond <- as.numeric(predict(mB, newdata = newdata, type = "response"))
 
   # Probabilidades coherentes
